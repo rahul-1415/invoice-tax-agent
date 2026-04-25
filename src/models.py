@@ -30,7 +30,7 @@ class Invoice:
     invoice_id: str
     vendor: str
     date: str
-    line_items: list[LineItem] = field(default_factory=list)
+    line_items: list[LineItem] = field(default_factory=list) # field(default_factory=list) is used to provide a default empty list for line_items, prevents invoice instances from sharing the same list .
     tax_exempt: bool = False # Tax exempt status is optional and defaults to False. In the sample documents, some invoices are marked as tax exempt.
     tax_exempt_reason: Optional[str] = None # Tax exempt reason is optional and defaults to None.
     vendor_address: Optional[Address] = None
@@ -59,7 +59,7 @@ class TaxResult:
     total_tax: float
     grand_total: float
     tax_exempt: bool
-    line_item_taxes: list[LineItemTax]
+    line_item_taxes: list[LineItemTax] = field(default_factory=list) # field(default_factory=list) is used to provide a default empty list for line_item_taxes, prevents TaxResult instances from sharing the same list .
     vendor_address: Optional[Address] = None
     bill_to_name: Optional[str] = None
     bill_to_address: Optional[Address] = None
