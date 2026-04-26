@@ -1,8 +1,8 @@
 from dataclasses import dataclass, field
 from typing import Optional
 
-# This module defines the data models for the invoice tax calculation system (Read sample docs to understand the structure).
 
+# This module defines the data models for the invoice tax calculation system (Read sample docs to understand the structure).
 @dataclass
 class LineItem:
     description: str
