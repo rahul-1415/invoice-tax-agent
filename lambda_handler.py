@@ -1,7 +1,9 @@
 import os
+import io
 import json
 import base64
 import boto3
+from PIL import Image
 from decimal import Decimal
 from datetime import datetime, timezone
 from openai import OpenAI
@@ -52,10 +54,15 @@ def _handle_post(event: dict) -> dict:
 
     file_bytes = base64.b64decode(body) if is_base64 else body.encode()
 
-    file_type = "pdf" if file_bytes[:4] == b"%PDF" else "image"
+    # fix: Convert images to PDF for consistent processing, it gets complicated when passing to API gateway with different content types.
+    if file_bytes[:4] != b"%PDF":
+        image = Image.open(io.BytesIO(file_bytes))
+        buf = io.BytesIO()
+        image.convert("RGB").save(buf, format="PDF")
+        file_bytes = buf.getvalue()
 
-    invoice = extractor.extract(file_bytes, file_type)
-    result = agent.process_invoice(invoice, extraction_method=file_type)
+    invoice = extractor.extract(file_bytes, "pdf")
+    result = agent.process_invoice(invoice, extraction_method="pdf")
     result["processed_at"] = datetime.now(timezone.utc).isoformat()
 
     # DynamoDB requires Decimal instead of float
@@ -63,14 +70,11 @@ def _handle_post(event: dict) -> dict:
 
     table.put_item(Item=dynamo_item)
 
-    # Store original file
-    content_type = "application/pdf" if file_type == "pdf" else "image/jpeg"
-    extension = "pdf" if file_type == "pdf" else "jpg"
     s3.put_object(
         Bucket=S3_BUCKET,
-        Key=f"invoices/{result['invoice_id']}.{extension}",
+        Key=f"invoices/{result['invoice_id']}.pdf",
         Body=file_bytes,
-        ContentType=content_type,
+        ContentType="application/pdf",
     )
 
     return _response(200, result)
