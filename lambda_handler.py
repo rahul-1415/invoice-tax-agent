@@ -34,12 +34,12 @@ CORS_HEADERS = {
     "Access-Control-Allow-Methods": "OPTIONS,POST,GET",
 }
 
-# Helper function to format HTTP responses
+# Helper function to format HTTP responses, fix: ensure Decimal types from DynamoDB are converted to string.
 def _response(status: int, body: dict) -> dict:
     return {
         "statusCode": status,
         "headers": {**CORS_HEADERS, "Content-Type": "application/json"},
-        "body": json.dumps(body),
+        "body": json.dumps(body, default=str),
     }
 
 # POST /invoices — accept invoice files, extract, classify, calculate.

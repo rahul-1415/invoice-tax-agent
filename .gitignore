@@ -209,3 +209,5 @@ __marimo__/
 # Lambda deployment
 package/
 deployment.zip
+
+.DS_Store
