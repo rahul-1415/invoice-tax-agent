@@ -2,6 +2,7 @@ import os
 import json
 import base64
 import boto3
+from decimal import Decimal
 from datetime import datetime, timezone
 from openai import OpenAI
 from src.invoice_extractor import InvoiceExtractor
@@ -57,8 +58,10 @@ def _handle_post(event: dict) -> dict:
     result = agent.process_invoice(invoice, extraction_method=file_type)
     result["processed_at"] = datetime.now(timezone.utc).isoformat()
 
-    # Store result
-    table.put_item(Item=result)
+    # DynamoDB requires Decimal instead of float
+    dynamo_item = json.loads(json.dumps(result), parse_float=Decimal)
+
+    table.put_item(Item=dynamo_item)
 
     # Store original file
     content_type = "application/pdf" if file_type == "pdf" else "image/jpeg"
