@@ -9,3 +9,5 @@ Access to AmazonDynamoDBFullAccess, AmazonS3FullAccess, AmazonSSMReadOnlyAccess,
 5. Lambda Setup - Name: invoice-tax-agent, Role: attached above role. Setup env var.
 6. API Gateway Setup - Name: invoice-tax-api
 Setup endpoints POST -> /invoices, GET -> /invoices/{invoice_id}, Deployed API. Stored Invoke URL in SSM.
+Added GET -> /invoice
+7. Setting up CloudFormation
