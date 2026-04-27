@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Invoice Tax Agent</title>
+</head>
+<body>
+  <h1>Invoice Tax Agent</h1>
+
+  <!-- File input and upload trigger -->
+  <input type="file" id="fileInput" accept="application/pdf,image/*" />
+  <button onclick="uploadFile()">Process Invoice</button>
+  <p id="status"></p>
+
+  <!-- Result of the most recently processed invoice -->
+  <div id="result"></div>
+
+  <hr />
+
+  <!-- Previously processed invoices loaded from DynamoDB on page load -->
+  <h2>Previously Processed</h2>
+  <div id="history"></div>
+
+  <script>
+    const API = "https://fi3epvi39h.execute-api.us-east-1.amazonaws.com/prod/invoices";
+
+    // Upload selected file to POST /invoices, display result
+    async function uploadFile() {
+      const file = document.getElementById("fileInput").files[0];
+      if (!file) return alert("Select a file first");
+
+      document.getElementById("status").textContent = "Processing...";
+
+      try {
+        const res = await fetch(API, {
+          method: "POST",
+          headers: { "Content-Type": file.type || "application/pdf" },
+          body: file,
+        });
+
+        if (!res.ok) throw new Error(`Server error: ${res.status}`);
+        const d = await res.json();
+
+        document.getElementById("status").textContent = "Done.";
+        document.getElementById("result").innerHTML = renderInvoice(d);
+
+        // Refresh history to include the newly processed invoice
+        loadHistory();
+      } catch (err) {
+        document.getElementById("status").textContent = "Error: " + err.message;
+      }
+    }
+
+    // Fetch all invoices from GET /invoices and display in history section
+    async function loadHistory() {
+      try {
+        const res = await fetch(API);
+        if (!res.ok) throw new Error(`Server error: ${res.status}`);
+        const items = await res.json();
+
+        if (!items.length) {
+          document.getElementById("history").innerHTML = "<p>No invoices processed yet.</p>";
+          return;
+        }
+
+        document.getElementById("history").innerHTML = items.map(renderInvoice).join("<hr/>");
+      } catch (err) {
+        document.getElementById("history").innerHTML = "Error loading history: " + err.message;
+      }
+    }
+
+    // Render a single invoice result as HTML
+    function renderInvoice(d) {
+      return `
+        <h2>${d.vendor} — Invoice ${d.invoice_id}</h2>
+        <p>Date: ${d.date} | Customer: ${d.customer_id || "—"} | Tax Exempt: ${d.tax_exempt}</p>
+        <p>Subtotal: $${parseFloat(d.subtotal).toFixed(2)} | Tax: $${parseFloat(d.total_tax).toFixed(2)} | Grand Total: $${parseFloat(d.grand_total).toFixed(2)}</p>
+        <table border="1" cellpadding="6">
+          <tr><th>Description</th><th>Category</th><th>Rate</th><th>Tax</th><th>Amount</th></tr>
+          ${(d.line_items || []).map(i => `
+            <tr>
+              <td>${i.description}</td>
+              <td>${i.category}</td>
+              <td>${(parseFloat(i.tax_rate) * 100).toFixed(1)}%</td>
+              <td>$${parseFloat(i.tax_amount).toFixed(2)}</td>
+              <td>$${parseFloat(i.total_amount).toFixed(2)}</td>
+            </tr>`).join("")}
+        </table>
+      `;
+    }
+
+    // Load history on page load
+    loadHistory();
+  </script>
+</body>
+</html>
