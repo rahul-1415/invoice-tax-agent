@@ -66,6 +66,7 @@ class TaxResult:
     customer_id: Optional[str] = None
     due_date: Optional[str] = None
     contact_person: Optional[Contact] = None
+    tax_exempt_reason: Optional[str] = None
     extraction_method: Optional[str] = None  # pdf parsing or openai vision model
     processed_at: Optional[str] = None # for audit and debugging purposes, we can track when the invoice was processed.
 

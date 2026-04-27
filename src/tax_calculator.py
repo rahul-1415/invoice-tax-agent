@@ -3,6 +3,9 @@ from src.models import LineItem, Invoice, LineItemTax, TaxResult
 
 class TaxCalculator:
     # Method to calculate tax
+    def subtotal(self, invoice: Invoice) -> float:
+        return sum(item.total_amount for item in invoice.line_items)
+
     def calculate_tax(self, amount: float, tax_rate: float) -> float:
         return round(amount * tax_rate, 2)
     
@@ -22,7 +25,7 @@ class TaxCalculator:
     
     # Calucalte the subtotal, total tax, and grand total for the invoice based on the line item taxes calculated.
     def calculate_totals(self, invoice: Invoice, line_item_taxes: list) -> dict:
-        subtotal = invoice.subtotal
+        subtotal = self.subtotal(invoice)
         total_tax = sum(item.tax_amount for item in line_item_taxes)
         grand_total = round(subtotal + total_tax, 2)
         return {

@@ -105,14 +105,14 @@ class InvoiceExtractor:
     # Parse extracted text using GPT-4o with structured JSON format.
     #ref: https://developers.openai.com/api/docs/guides/function-calling
     def _parse_with_gpt(self, text: str) -> Invoice:
-        response = self.client.messages.create(
+        response = self.client.chat.completions.create(
             model="gpt-4o",
             messages=[{"role": "user", "content": EXTRACTION_PROMPT + text}],
             response_format={"type": "json_object"},
             temperature=0,
         )
-        
-        data = json.loads(response.content[0].text)
+
+        data = json.loads(response.choices[0].message.content)
         return self._to_invoice(data)
     
     # Extract invoice details using OpenAI vision model. This is a fallback method.
@@ -120,23 +120,30 @@ class InvoiceExtractor:
     def _extract_with_vision(self, file_bytes: bytes) -> Invoice:
         if not self.client:
             raise ValueError("OpenAI client required for vision extraction")
-        
-        image_base64 = base64.b64encode(file_bytes).decode()
-    
-        response = self.client.messages.create(
+
+        # Render first PDF page to JPEG so OpenAI vision can read it
+        doc = pymupdf.open(stream=file_bytes, filetype="pdf")
+        page = doc[0]
+        pix = page.get_pixmap(dpi=150)
+        image_bytes = pix.tobytes("jpeg")
+        doc.close()
+
+        image_base64 = base64.b64encode(image_bytes).decode()
+
+        response = self.client.chat.completions.create(
             model="gpt-4o",
             messages=[{
                 "role": "user",
                 "content": [
                     {"type": "text", "text": EXTRACTION_PROMPT},
-                    {"type": "image", "source": {"type": "base64", "media_type": "image/jpeg", "data": image_base64}}
+                    {"type": "image_url", "image_url": {"url": f"data:image/jpeg;base64,{image_base64}"}}
                 ]
             }],
             response_format={"type": "json_object"},
             temperature=0,
         )
-        
-        data = json.loads(response.content[0].text)
+
+        data = json.loads(response.choices[0].message.content)
         return self._to_invoice(data)
     
     # Return invoice data

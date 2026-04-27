@@ -18,12 +18,12 @@ class TaxClassifier:
         with open(path, 'r', encoding='utf-8') as f:
             reader = csv.DictReader(f)
             for row in reader:
-                if not row.get('category') or not row.get('tax_rate'):
+                if not row.get('Category') or not row.get('Tax Rate (%)'):
                     continue
-                
-                category_name = row['category'].strip()
+
+                category_name = row['Category'].strip()
                 try:
-                    tax_rate = float(row['tax_rate'])
+                    tax_rate = float(row['Tax Rate (%)']) / 100
                     self.categories[category_name] = tax_rate
                 except ValueError:
                     pass
