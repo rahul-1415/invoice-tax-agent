@@ -80,7 +80,13 @@ def _handle_post(event: dict) -> dict:
     return _response(200, result)
 
 
-# GET /invoices/{invoice_id} — fetch result from DynamoDB
+# GET /invoices — list all processed invoices from DynamoDB
+def _handle_list() -> dict:
+    resp = table.scan()
+    return _response(200, resp.get("Items", []))
+
+
+# GET /invoices/{invoice_id} — fetch single result from DynamoDB
 def _handle_get(event: dict) -> dict:
     invoice_id = (event.get("pathParameters") or {}).get("invoice_id")
     if not invoice_id:
@@ -102,6 +108,7 @@ def lambda_handler(event: dict, context) -> dict:
     elif method == "POST":
         return _handle_post(event)
     elif method == "GET":
-        return _handle_get(event)
+        invoice_id = (event.get("pathParameters") or {}).get("invoice_id")
+        return _handle_get(event) if invoice_id else _handle_list()
     else:
         return _response(405, {"error": f"Method {method} not allowed"})
