@@ -1,9 +1,9 @@
 import pymupdf
 import base64
 import json
-import pytesseract
-import io
-from PIL import Image
+# import pytesseract
+# import io
+# from PIL import Image
 import uuid
 from src.models import Invoice, LineItem, Address, Contact
 
@@ -61,11 +61,12 @@ class InvoiceExtractor:
     def __init__(self, openai_client):
         self.client = openai_client
     
-    # Extract based on file type, supports PDF and images.
+    # Extract based on file type. Always receives PDF (images converted to PDF in lambda_handler.py:57-62)
     def extract(self, file_bytes: bytes, file_type: str) -> Invoice:
         if file_type == "pdf":
             return self._extract_from_pdf(file_bytes)
         elif file_type in ["image", "jpg", "png"]:
+            # UNUSED: Images are converted to PDF in lambda_handler before reaching this extractor
             return self._extract_from_image(file_bytes)
         else:
             raise ValueError(f"Unsupported file type: {file_type}")
@@ -84,24 +85,24 @@ class InvoiceExtractor:
         else:
             return self._extract_with_vision(pdf_bytes)
     
-    # Extract text from image. Try OCR first, if it fails or returns empty text, fallback to vision model extraction.
-    def _extract_from_image(self, image_bytes: bytes) -> Invoice:
-        try:
-            text = self._extract_with_ocr(image_bytes)
-            if len(text.strip()) >= self.MIN_TEXT_LENGTH:
-                return self._parse_with_gpt(text)
-        except Exception:
-            pass
-        
-        return self._extract_with_vision(image_bytes)
+    # UNUSED: Extract text from image. Images are converted to PDF in lambda_handler before reaching extractor.
+    # def _extract_from_image(self, image_bytes: bytes) -> Invoice:
+    #     try:
+    #         text = self._extract_with_ocr(image_bytes)
+    #         if len(text.strip()) >= self.MIN_TEXT_LENGTH:
+    #             return self._parse_with_gpt(text)
+    #     except Exception:
+    #         pass
+    #
+    #     return self._extract_with_vision(image_bytes)
+
+    # UNUSED: Extract text from image using OCR with pytesseract.
+    # def _extract_with_ocr(self, image_bytes: bytes) -> str:
+    #     image = Image.open(io.BytesIO(image_bytes))
+    #     text = pytesseract.image_to_string(image)
+    #     return text
     
-    # Extract text from image using OCR with pytesseract.
-    # ref: https://pypi.org/project/pytesseract/
-    def _extract_with_ocr(self, image_bytes: bytes) -> str:
-        image = Image.open(io.BytesIO(image_bytes))
-        text = pytesseract.image_to_string(image)
-        return text
-    
+
     # Parse extracted text using GPT-4o with structured JSON format.
     #ref: https://developers.openai.com/api/docs/guides/function-calling
     def _parse_with_gpt(self, text: str) -> Invoice:

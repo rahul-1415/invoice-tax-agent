@@ -72,7 +72,7 @@
     // Render a single invoice result as HTML
     function renderInvoice(d) {
       return `
-        <h2>${d.vendor} — Invoice ${d.invoice_id}</h2>
+        <h2>${d.vendor} - Invoice ${d.invoice_id}</h2>
         <p>Date: ${d.date} | Customer: ${d.customer_id || "—"} | Tax Exempt: ${d.tax_exempt}</p>
         <p>Subtotal: $${parseFloat(d.subtotal).toFixed(2)} | Tax: $${parseFloat(d.total_tax).toFixed(2)} | Grand Total: $${parseFloat(d.grand_total).toFixed(2)}</p>
         <table border="1" cellpadding="6">
